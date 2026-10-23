@@ -85,15 +85,19 @@ public struct Corrector {
     /// switched layouts, which starts a new word. Reading this from the keys themselves avoids
     /// depending on when macOS delivers its layout-change notification.
     var wordLanguage: Language?
+    var deleteKeepsWatching = false
 
     public init(lexicon: Lexicon) {
         self.lexicon = lexicon
     }
 
-    /// Anything that ends a word: space, return, arrows, a click, an app switch.
-    public mutating func boundary() {
+    /// Anything that ends a word: space, return, arrows, a click, an app switch. Pass
+    /// `fromShortcut` for a Command shortcut such as Select All or Cut, after which a Delete
+    /// empties the selection rather than reaching into text LangFix never saw.
+    public mutating func boundary(fromShortcut: Bool = false) {
         state = .watching([])
         wordLanguage = nil
+        deleteKeepsWatching = fromShortcut
     }
 
     /// Returns an undo when the backspace lands right after a correction. The caller swallows
@@ -105,16 +109,25 @@ public struct Corrector {
             wordLanguage = undo.correction.switchTo
             return undo
         case .watching(var keys):
-            state = keys.popLast() == nil ? .settled : .watching(keys)
+            if keys.popLast() == nil, !deleteKeepsWatching {
+                state = .settled
+            } else {
+                state = .watching(keys)
+            }
+            deleteKeepsWatching = false
             return nil
         case .settled:
             return nil
         }
     }
 
-    /// Feed one typed character produced under `language`. Returns a correction when the word
-    /// so far reads as garbage in `language` but as a real prefix in the other layout.
-    public mutating func type(_ character: Unicode.Scalar, in language: Language, rules: Rules = Rules()) -> Correction? {
+    /// Feed one typed character. `selected` is the input source macOS reports, which can lag
+    /// behind a switch, so the character's own layout wins whenever only one layout has it.
+    /// Returns a correction when the word so far reads as garbage in its layout but as a real
+    /// prefix in the other one.
+    public mutating func type(_ character: Unicode.Scalar, in selected: Language, rules: Rules = Rules()) -> Correction? {
+        let language = Keyboard.language(of: character) ?? selected
+        deleteKeepsWatching = false
         if case .corrected(_, atWordEnd: true) = state { state = .watching([]) }
         if let wordLanguage, wordLanguage != language { state = .watching([]) }
         wordLanguage = language
@@ -149,7 +162,8 @@ public struct Corrector {
     /// Feed the space that ends a word, before the app sees it. Catches whole words whose start
     /// read as the current language, such as "ot" for นะ, which `type` must leave alone. A returned
     /// correction already ends in the space, so the caller swallows the original one.
-    public mutating func endWord(in language: Language, rules: Rules = Rules()) -> Correction? {
+    public mutating func endWord(in selected: Language, rules: Rules = Rules()) -> Correction? {
+        let language = wordLanguage ?? selected
         guard case .watching(let keys) = state, keys.count >= 2 else {
             state = .watching([])
             return nil

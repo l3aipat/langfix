@@ -48,6 +48,13 @@ public enum Keyboard {
 
     public static var keyCount: Int { qwerty.count }
 
+    /// The layout that produced `character`, when only one layout has it. Punctuation such as
+    /// "," or "/" is on both, so the caller falls back to the selected input source.
+    public static func language(of character: Unicode.Scalar) -> Language? {
+        let layouts = Language.allCases.filter { position(of: character, in: $0) != nil }
+        return layouts.count == 1 ? layouts[0] : nil
+    }
+
     public static func position(of character: Unicode.Scalar, in language: Language) -> KeyPosition? {
         lookup[language]?[character]
     }

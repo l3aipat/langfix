@@ -110,7 +110,7 @@ final class KeyboardMonitor {
               scalars.count == 1, let character = scalars.first,
               !character.properties.isWhitespace, character.value >= 0x20
         else {
-            corrector.boundary()
+            corrector.boundary(fromShortcut: event.flags.contains(.maskCommand))
             return pass
         }
         guard let correction = corrector.type(character, in: InputSources.current(), rules: preferences.rules) else { return pass }

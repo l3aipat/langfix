@@ -225,3 +225,34 @@ let shortWords = WordSet(english: ["other", "ok"], thai: ["นะ", "ไม่"]
     #expect(typeAll("xq", in: .english, &corrector).isEmpty)
     #expect(typeAll("้ำส", in: .thai, &corrector) == [Correction(deleteCount: 2, insert: "hel", switchTo: .english)])
 }
+
+@Test func charactersFromOneLayoutOverrideALaggingInputSource() {
+    var corrector = Corrector(lexicon: lexicon)
+    #expect(typeAll("้ำส", in: .english, &corrector) == [Correction(deleteCount: 2, insert: "hel", switchTo: .english)])
+}
+
+@Test func punctuationOnBothLayoutsFollowsTheInputSource() {
+    #expect(Keyboard.language(of: ",") == nil)
+    #expect(Keyboard.language(of: "ก") == .thai)
+    #expect(Keyboard.language(of: "q") == .english)
+}
+
+@Test func deleteAfterSelectAllKeepsWatchingTheNextWord() {
+    var corrector = Corrector(lexicon: lexicon)
+    corrector.boundary(fromShortcut: true)
+    _ = corrector.backspace()
+    #expect(typeAll("l;y", in: .english, &corrector).count == 1)
+}
+
+@Test func deleteAfterASpaceStillStopsWatching() {
+    var corrector = Corrector(lexicon: lexicon)
+    corrector.boundary()
+    _ = corrector.backspace()
+    #expect(typeAll("l;y", in: .english, &corrector).isEmpty)
+}
+
+@Test func wordEndUsesTheLayoutTheWordWasTypedIn() {
+    var corrector = Corrector(lexicon: shortWords)
+    _ = typeAll("ot", in: .english, &corrector)
+    #expect(corrector.endWord(in: .thai) == Correction(deleteCount: 2, insert: "นะ ", switchTo: .thai))
+}
