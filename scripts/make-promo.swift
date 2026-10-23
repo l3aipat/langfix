@@ -124,8 +124,10 @@ func drawFrame(_ t: Double) {
         let ctaIn = ease((local - 0.8) / 0.4)
         text("ทำงานในเครื่อง ไม่ส่งข้อความที่พิมพ์ออกไปไหน", size: 36, weight: .medium, color: paper,
              center: CGPoint(x: 540, y: 900), alpha: ctaIn * 0.85)
-        // Left empty below this line: the poll sticker is added in Instagram when posting.
-        text("อยากได้ไหม? โหวตเลย 👇", size: 68, color: paper, center: CGPoint(x: 540, y: 780), alpha: ctaIn)
+        // Left empty below these lines: the poll sticker is added in Instagram when posting.
+        text("เปิดให้เพื่อนลองใช้ฟรี", size: 68, color: paper, center: CGPoint(x: 540, y: 790), alpha: ctaIn)
+        text("อยากลอง? โหวตเลย เดี๋ยวส่งไฟล์ให้ทาง DM 👇", size: 40, weight: .medium, color: paper,
+             center: CGPoint(x: 540, y: 700), alpha: ctaIn * 0.9)
         return
     }
     if scene.isFinale {
