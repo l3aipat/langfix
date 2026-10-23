@@ -1,0 +1,64 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:langfix}",
+            "name": "Debug check-layout",
+            "target": "check-layout",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug check-layout"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:langfix}",
+            "name": "Release check-layout",
+            "target": "check-layout",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release check-layout"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:langfix}",
+            "name": "Debug LangFix",
+            "target": "LangFix",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug LangFix"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:langfix}",
+            "name": "Release LangFix",
+            "target": "LangFix",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release LangFix"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:langfix}",
+            "name": "Debug type-keys",
+            "target": "type-keys",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug type-keys"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:langfix}",
+            "name": "Release type-keys",
+            "target": "type-keys",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release type-keys"
+        }
+    ]
+}
