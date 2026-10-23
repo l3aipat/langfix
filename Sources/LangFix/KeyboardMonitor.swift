@@ -86,6 +86,13 @@ final class KeyboardMonitor {
             guard let undo = corrector.backspace() else { return pass }
             apply(undo.correction)
             preferences.ignored.insert(undo.learned)
+            preferences.stats.undone += 1
+            return nil
+        }
+        if keyCode == Self.spaceKeyCode, modifiers.isEmpty {
+            guard let correction = corrector.endWord(in: InputSources.current(), rules: preferences.rules) else { return pass }
+            apply(correction)
+            preferences.stats.fixed += 1
             return nil
         }
         let scalars = event.unicodeString.unicodeScalars
@@ -98,6 +105,7 @@ final class KeyboardMonitor {
         }
         guard let correction = corrector.type(character, in: InputSources.current(), rules: preferences.rules) else { return pass }
         apply(correction)
+        preferences.stats.fixed += 1
         return nil
     }
 
@@ -120,6 +128,7 @@ final class KeyboardMonitor {
             pasteboard.clearContents()
             pasteboard.setString(converted, forType: .string)
             self.post(keyCode: Self.pasteKeyCode, flags: .maskCommand)
+            self.preferences.stats.converted += 1
             self.selectedByUs = language
             InputSources.select(language)
             // The paste reads the clipboard asynchronously, so restore only after it has landed.

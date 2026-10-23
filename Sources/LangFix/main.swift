@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return window
     }()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    private let statsItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let toggleItem = NSMenuItem(title: "Auto-correct layout", action: #selector(toggle), keyEquivalent: "")
     private let excludeItem = NSMenuItem(title: "", action: #selector(toggleExcluded), keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
@@ -27,6 +28,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         permissionItem.target = self
         permissionItem.isHidden = true
         menu.addItem(permissionItem)
+        menu.addItem(statsItem)
+        menu.addItem(.separator())
         toggleItem.target = self
         toggleItem.state = .on
         menu.addItem(toggleItem)
@@ -111,6 +114,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
+        let stats = preferences.stats
+        statsItem.title = "Fixed \(stats.fixed) word\(stats.fixed == 1 ? "" : "s"), \(stats.undone) undone"
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         let front = NSWorkspace.shared.frontmostApplication
         excludeItem.title = "Off in \(front?.localizedName ?? "this app")"

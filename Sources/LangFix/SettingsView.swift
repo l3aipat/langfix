@@ -16,6 +16,15 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Since \(preferences.stats.since.formatted(date: .abbreviated, time: .omitted))") {
+                let stats = preferences.stats
+                LabeledContent("Words fixed while typing", value: "\(stats.fixed)")
+                LabeledContent("Undone with Delete", value: stats.fixed == 0 ? "0" :
+                    "\(stats.undone) (\((Double(stats.undone) / Double(stats.fixed)).formatted(.percent.precision(.fractionLength(0)))))")
+                LabeledContent("Selections converted", value: "\(stats.converted)")
+                Button("Reset Counts") { preferences.stats = Stats() }
+            }
+
             Section("Undone words") {
                 if preferences.ignored.isEmpty {
                     Text("None yet. Press Delete right after LangFix changes a word, and it leaves that word alone from then on.")

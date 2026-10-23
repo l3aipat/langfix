@@ -8,6 +8,10 @@ struct WordSet: Lexicon {
     func isPrefix(_ text: String, in language: Language) -> Bool {
         (language == .english ? english : thai).contains { $0.hasPrefix(text) }
     }
+
+    func isWord(_ text: String, in language: Language) -> Bool {
+        (language == .english ? english : thai).contains(text)
+    }
 }
 
 let lexicon = WordSet(english: ["hello", "help", "the"], thai: ["สวัสดี", "แมว", "ทำ"])
@@ -134,4 +138,51 @@ func onThaiLayout(_ english: String) -> String {
 
 @Test func selectionWithoutLettersIsNotConverted() {
     #expect(Keyboard.convert("  \n") == nil)
+}
+
+let shortWords = WordSet(english: ["other", "ok"], thai: ["นะ", "ไม่"])
+
+@Test func wordEndCatchesShortWordWhoseStartLooksEnglish() {
+    var corrector = Corrector(lexicon: shortWords)
+    #expect(typeAll("ot", in: .english, &corrector).isEmpty)
+    #expect(corrector.endWord(in: .english) == Correction(deleteCount: 2, insert: "นะ ", switchTo: .thai))
+}
+
+@Test func wordEndLeavesRealWordsAlone() {
+    var corrector = Corrector(lexicon: shortWords)
+    _ = typeAll("ok", in: .english, &corrector)
+    #expect(corrector.endWord(in: .english) == nil)
+}
+
+@Test func wordEndLeavesIgnoredWordsAlone() {
+    var corrector = Corrector(lexicon: shortWords)
+    let rules = Rules(ignored: [IgnoredWord(text: "ot", language: .english)])
+    _ = typeAll("ot", in: .english, &corrector, rules: rules)
+    #expect(corrector.endWord(in: .english, rules: rules) == nil)
+}
+
+@Test func wordEndCorrectionCanBeUndone() {
+    var corrector = Corrector(lexicon: shortWords)
+    _ = typeAll("ot", in: .english, &corrector)
+    _ = corrector.endWord(in: .english)
+    #expect(corrector.backspace()?.correction == Correction(deleteCount: 3, insert: "ot ", switchTo: .english))
+}
+
+@Test func wordAfterWordEndCorrectionIsWatched() {
+    var corrector = Corrector(lexicon: WordSet(english: [], thai: ["นะ", "ไม่"]))
+    _ = typeAll("ot", in: .english, &corrector)
+    _ = corrector.endWord(in: .english)
+    #expect(typeAll("w,j", in: .english, &corrector).count == 1)
+}
+
+@Test func singleKeyIsNeverCorrectedAtWordEnd() {
+    var corrector = Corrector(lexicon: WordSet(english: [], thai: ["ฟ"]))
+    _ = typeAll("a", in: .english, &corrector)
+    #expect(corrector.endWord(in: .english) == nil)
+}
+
+@Test func wordAlreadyCorrectedIsNotCorrectedAgainAtWordEnd() {
+    var corrector = Corrector(lexicon: lexicon)
+    #expect(typeAll("l;y", in: .english, &corrector).count == 1)
+    #expect(corrector.endWord(in: .thai) == nil)
 }

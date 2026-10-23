@@ -1,6 +1,8 @@
 public protocol Lexicon {
     /// True when `text` is a word, or the start of one, in `language`.
     func isPrefix(_ text: String, in language: Language) -> Bool
+    /// True when `text` is a complete word in `language`.
+    func isWord(_ text: String, in language: Language) -> Bool
 }
 
 public struct Correction: Equatable, Sendable {
@@ -35,6 +37,12 @@ public struct Rules: Equatable, Sendable {
     }
 }
 
+extension Rules {
+    func ignores(_ text: String, in language: Language) -> Bool {
+        ignored.contains { $0.language == language && text.unicodeScalars.starts(with: $0.text.unicodeScalars) }
+    }
+}
+
 public struct Undo: Equatable, Sendable {
     public let correction: Correction
     /// The caller adds this to `Rules.ignored` so the word is never corrected again.
@@ -45,8 +53,9 @@ public struct Undo: Equatable, Sendable {
 public struct Corrector {
     enum WordState: Equatable {
         case watching([KeyPosition])
-        /// Just corrected. A backspace now reverts it; any other key settles the word.
-        case corrected(Undo)
+        /// Just corrected. A backspace now reverts it. Any other key settles the word, or starts
+        /// the next one when the correction happened as the previous word ended.
+        case corrected(Undo, atWordEnd: Bool)
         /// Already corrected, or judged as text we must not touch, until the next boundary.
         case settled
     }
@@ -69,7 +78,7 @@ public struct Corrector {
     /// that backspace and applies the undo instead.
     public mutating func backspace() -> Undo? {
         switch state {
-        case .corrected(let undo):
+        case .corrected(let undo, _):
             state = .settled
             return undo
         case .watching(var keys):
@@ -83,6 +92,7 @@ public struct Corrector {
     /// Feed one typed character produced under `language`. Returns a correction when the word
     /// so far reads as garbage in `language` but as a real prefix in the other layout.
     public mutating func type(_ character: Unicode.Scalar, in language: Language, rules: Rules = Rules()) -> Correction? {
+        if case .corrected(_, atWordEnd: true) = state { state = .watching([]) }
         guard case .watching(var keys) = state else {
             state = .settled
             return nil
@@ -96,10 +106,7 @@ public struct Corrector {
         guard keys.count >= rules.minimumLength else { return nil }
 
         let typed = Keyboard.text(keys, in: language)
-        let ignored = rules.ignored.contains {
-            $0.language == language && typed.unicodeScalars.starts(with: $0.text.unicodeScalars)
-        }
-        if ignored || lexicon.isPrefix(typed, in: language) {
+        if rules.ignores(typed, in: language) || lexicon.isPrefix(typed, in: language) {
             if keys.count >= Self.maximumLength { state = .settled }
             return nil
         }
@@ -109,7 +116,28 @@ public struct Corrector {
         guard lexicon.isPrefix(converted, in: other) else { return nil }
         state = .corrected(Undo(
             correction: Correction(deleteCount: converted.unicodeScalars.count, insert: typed, switchTo: language),
-            learned: IgnoredWord(text: typed, language: language)))
+            learned: IgnoredWord(text: typed, language: language)), atWordEnd: false)
         return Correction(deleteCount: keys.count - 1, insert: converted, switchTo: other)
+    }
+
+    /// Feed the space that ends a word, before the app sees it. Catches whole words whose start
+    /// read as the current language, such as "ot" for นะ, which `type` must leave alone. A returned
+    /// correction already ends in the space, so the caller swallows the original one.
+    public mutating func endWord(in language: Language, rules: Rules = Rules()) -> Correction? {
+        guard case .watching(let keys) = state, keys.count >= 2 else {
+            state = .watching([])
+            return nil
+        }
+        state = .watching([])
+        let typed = Keyboard.text(keys, in: language)
+        let other = language.other
+        let converted = Keyboard.text(keys, in: other)
+        guard !rules.ignores(typed, in: language), !lexicon.isWord(typed, in: language),
+              lexicon.isWord(converted, in: other)
+        else { return nil }
+        state = .corrected(Undo(
+            correction: Correction(deleteCount: converted.unicodeScalars.count + 1, insert: typed + " ", switchTo: language),
+            learned: IgnoredWord(text: typed, language: language)), atWordEnd: true)
+        return Correction(deleteCount: keys.count, insert: converted + " ", switchTo: other)
     }
 }

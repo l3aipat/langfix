@@ -25,6 +25,21 @@ struct SpellLexicon: Lexicon {
         return misspelled.location == NSNotFound
     }
 
+    /// Thai has no spelling dictionary, but a complete Thai word lists itself among its completions.
+    func isWord(_ text: String, in language: Language) -> Bool {
+        let checker = NSSpellChecker.shared
+        switch language {
+        case .thai:
+            let range = NSRange(location: 0, length: (text as NSString).length)
+            return checker.completions(forPartialWordRange: range, in: text, language: language.rawValue,
+                                       inSpellDocumentWithTag: 0)?.contains(text) ?? false
+        case .english:
+            guard hasPlausibleCasing(text), text.unicodeScalars.allSatisfy(CharacterSet.letters.contains) else { return false }
+            return checker.checkSpelling(of: text, startingAt: 0, language: language.rawValue, wrap: false,
+                                         inSpellDocumentWithTag: 0, wordCount: nil).location == NSNotFound
+        }
+    }
+
     /// "hello", "Hello" and "HELLO" are typed on purpose. "hEllo" is a Thai word with Shift held.
     private func hasPlausibleCasing(_ text: String) -> Bool {
         let rest = text.dropFirst()
