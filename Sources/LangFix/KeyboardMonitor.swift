@@ -11,22 +11,17 @@ final class KeyboardMonitor {
     private static let copyKeyCode: CGKeyCode = 8
     private static let pasteKeyCode: CGKeyCode = 9
 
-    private static let ignoredKey = "ignoredWords"
-    private static let excludedKey = "excludedApps"
-
     var enabled = true
-    private var corrector = Corrector(lexicon: SpellLexicon(), ignored: KeyboardMonitor.loadIgnored())
+    private let preferences: Preferences
+    private var corrector = Corrector(lexicon: SpellLexicon())
     private var tap: CFMachPort?
     private let source = CGEventSource(stateID: .privateState)
     /// The layout LangFix last selected, so its own switch is not mistaken for the user's.
     private var selectedByUs: Language?
-    /// Bundle IDs where typing is left alone, such as terminals where commands are not words.
-    private(set) var excludedApps: Set<String>
     private var frontmostApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
 
-    init() {
-        UserDefaults.standard.register(defaults: [Self.excludedKey: ["com.apple.Terminal", "com.googlecode.iterm2"]])
-        excludedApps = Set(UserDefaults.standard.stringArray(forKey: Self.excludedKey) ?? [])
+    init(preferences: Preferences) {
+        self.preferences = preferences
         source?.userData = Self.marker
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
@@ -77,7 +72,7 @@ final class KeyboardMonitor {
             return pass
         }
         guard enabled, event.getIntegerValueField(.eventSourceUserData) != Self.marker,
-              !excludedApps.contains(frontmostApp ?? "")
+              !preferences.excludedApps.contains(frontmostApp ?? "")
         else { return pass }
 
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -89,8 +84,8 @@ final class KeyboardMonitor {
         }
         if keyCode == Self.deleteKeyCode {
             guard let undo = corrector.backspace() else { return pass }
-            apply(undo)
-            saveIgnored()
+            apply(undo.correction)
+            preferences.ignored.insert(undo.learned)
             return nil
         }
         let scalars = event.unicodeString.unicodeScalars
@@ -101,30 +96,9 @@ final class KeyboardMonitor {
             corrector.boundary()
             return pass
         }
-        guard let correction = corrector.type(character, in: InputSources.current()) else { return pass }
+        guard let correction = corrector.type(character, in: InputSources.current(), rules: preferences.rules) else { return pass }
         apply(correction)
         return nil
-    }
-
-    var ignoredCount: Int { corrector.ignored.count }
-
-    func setExcluded(_ bundleID: String, _ excluded: Bool) {
-        if excluded { excludedApps.insert(bundleID) } else { excludedApps.remove(bundleID) }
-        UserDefaults.standard.set(excludedApps.sorted(), forKey: Self.excludedKey)
-    }
-
-    func forgetIgnored() {
-        corrector.forgetIgnored()
-        saveIgnored()
-    }
-
-    private static func loadIgnored() -> Set<IgnoredWord> {
-        guard let data = UserDefaults.standard.data(forKey: ignoredKey) else { return [] }
-        return (try? JSONDecoder().decode(Set<IgnoredWord>.self, from: data)) ?? []
-    }
-
-    private func saveIgnored() {
-        UserDefaults.standard.set(try? JSONEncoder().encode(corrector.ignored), forKey: Self.ignoredKey)
     }
 
     /// Copies the selection, retypes it on the other layout and pastes it back. Reading the

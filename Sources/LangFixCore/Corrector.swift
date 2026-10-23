@@ -21,26 +21,43 @@ public struct IgnoredWord: Hashable, Codable, Sendable {
     }
 }
 
+/// The user's settings that shape each decision.
+public struct Rules: Equatable, Sendable {
+    public static let lengthRange = 2...6
+
+    /// Keys typed before a word is judged. Lower catches short words sooner but misfires more.
+    public var minimumLength: Int
+    public var ignored: Set<IgnoredWord>
+
+    public init(minimumLength: Int = 3, ignored: Set<IgnoredWord> = []) {
+        self.minimumLength = minimumLength
+        self.ignored = ignored
+    }
+}
+
+public struct Undo: Equatable, Sendable {
+    public let correction: Correction
+    /// The caller adds this to `Rules.ignored` so the word is never corrected again.
+    public let learned: IgnoredWord
+}
+
 /// Watches one word at a time and decides whether it was typed in the wrong layout.
 public struct Corrector {
     enum WordState: Equatable {
         case watching([KeyPosition])
         /// Just corrected. A backspace now reverts it; any other key settles the word.
-        case corrected(undo: Correction, learn: IgnoredWord)
+        case corrected(Undo)
         /// Already corrected, or judged as text we must not touch, until the next boundary.
         case settled
     }
 
-    public static let minimumLength = 3
     public static let maximumLength = 12
 
     let lexicon: Lexicon
     var state = WordState.watching([])
-    public private(set) var ignored: Set<IgnoredWord>
 
-    public init(lexicon: Lexicon, ignored: Set<IgnoredWord> = []) {
+    public init(lexicon: Lexicon) {
         self.lexicon = lexicon
-        self.ignored = ignored
     }
 
     /// Anything that ends a word: space, return, arrows, a click, an app switch.
@@ -48,16 +65,11 @@ public struct Corrector {
         state = .watching([])
     }
 
-    public mutating func forgetIgnored() {
-        ignored = []
-    }
-
     /// Returns an undo when the backspace lands right after a correction. The caller swallows
     /// that backspace and applies the undo instead.
-    public mutating func backspace() -> Correction? {
+    public mutating func backspace() -> Undo? {
         switch state {
-        case .corrected(let undo, let learn):
-            ignored.insert(learn)
+        case .corrected(let undo):
             state = .settled
             return undo
         case .watching(var keys):
@@ -70,7 +82,7 @@ public struct Corrector {
 
     /// Feed one typed character produced under `language`. Returns a correction when the word
     /// so far reads as garbage in `language` but as a real prefix in the other layout.
-    public mutating func type(_ character: Unicode.Scalar, in language: Language) -> Correction? {
+    public mutating func type(_ character: Unicode.Scalar, in language: Language, rules: Rules = Rules()) -> Correction? {
         guard case .watching(var keys) = state else {
             state = .settled
             return nil
@@ -81,10 +93,13 @@ public struct Corrector {
         }
         keys.append(key)
         state = .watching(keys)
-        guard keys.count >= Self.minimumLength else { return nil }
+        guard keys.count >= rules.minimumLength else { return nil }
 
         let typed = Keyboard.text(keys, in: language)
-        if isIgnored(typed, in: language) || lexicon.isPrefix(typed, in: language) {
+        let ignored = rules.ignored.contains {
+            $0.language == language && typed.unicodeScalars.starts(with: $0.text.unicodeScalars)
+        }
+        if ignored || lexicon.isPrefix(typed, in: language) {
             if keys.count >= Self.maximumLength { state = .settled }
             return nil
         }
@@ -92,13 +107,9 @@ public struct Corrector {
         let other = language.other
         let converted = Keyboard.text(keys, in: other)
         guard lexicon.isPrefix(converted, in: other) else { return nil }
-        state = .corrected(
-            undo: Correction(deleteCount: converted.unicodeScalars.count, insert: typed, switchTo: language),
-            learn: IgnoredWord(text: typed, language: language))
+        state = .corrected(Undo(
+            correction: Correction(deleteCount: converted.unicodeScalars.count, insert: typed, switchTo: language),
+            learned: IgnoredWord(text: typed, language: language)))
         return Correction(deleteCount: keys.count - 1, insert: converted, switchTo: other)
-    }
-
-    private func isIgnored(_ text: String, in language: Language) -> Bool {
-        ignored.contains { $0.language == language && text.unicodeScalars.starts(with: $0.text.unicodeScalars) }
     }
 }

@@ -1,14 +1,24 @@
 import AppKit
 import ApplicationServices
 import ServiceManagement
+import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let monitor = KeyboardMonitor()
+    private let preferences = Preferences()
+    private lazy var monitor = KeyboardMonitor(preferences: preferences)
+    private lazy var settingsWindow: NSWindow = {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(preferences: preferences)))
+        window.title = "LangFix Settings"
+        window.styleMask = [.titled, .closable]
+        window.isReleasedWhenClosed = false
+        window.center()
+        return window
+    }()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let toggleItem = NSMenuItem(title: "Auto-correct layout", action: #selector(toggle), keyEquivalent: "")
     private let excludeItem = NSMenuItem(title: "", action: #selector(toggleExcluded), keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
-    private let forgetItem = NSMenuItem(title: "", action: #selector(forgetIgnored), keyEquivalent: "")
+    private let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
     private let permissionItem = NSMenuItem(
         title: "Turn on LangFix in Accessibility settings…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
 
@@ -24,8 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(excludeItem)
         loginItem.target = self
         menu.addItem(loginItem)
-        forgetItem.target = self
-        menu.addItem(forgetItem)
+        settingsItem.target = self
+        menu.addItem(settingsItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit LangFix", action: #selector(NSApp.terminate), keyEquivalent: "q"))
         menu.delegate = self
@@ -77,11 +87,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// LangFix never activates itself, so the frontmost app is still the one the user was typing in.
     @objc private func toggleExcluded() {
         guard let id = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
-        monitor.setExcluded(id, !monitor.excludedApps.contains(id))
+        if preferences.excludedApps.contains(id) {
+            preferences.excludedApps.remove(id)
+        } else {
+            preferences.excludedApps.insert(id)
+        }
     }
 
-    @objc private func forgetIgnored() {
-        monitor.forgetIgnored()
+    @objc private func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow.makeKeyAndOrderFront(nil)
     }
 
     @objc private func openAccessibilitySettings() {
@@ -99,11 +114,9 @@ extension AppDelegate: NSMenuDelegate {
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         let front = NSWorkspace.shared.frontmostApplication
         excludeItem.title = "Off in \(front?.localizedName ?? "this app")"
-        excludeItem.state = monitor.excludedApps.contains(front?.bundleIdentifier ?? "") ? .on : .off
-        excludeItem.isHidden = front?.bundleIdentifier == nil
-        let count = monitor.ignoredCount
-        forgetItem.title = "Forget \(count) undone word\(count == 1 ? "" : "s")"
-        forgetItem.isHidden = count == 0
+        excludeItem.state = preferences.excludedApps.contains(front?.bundleIdentifier ?? "") ? .on : .off
+        // While Settings is open LangFix itself is frontmost, and turning it off there means nothing.
+        excludeItem.isHidden = front?.bundleIdentifier == nil || front == .current
     }
 }
 

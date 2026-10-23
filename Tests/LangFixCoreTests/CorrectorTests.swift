@@ -12,8 +12,8 @@ struct WordSet: Lexicon {
 
 let lexicon = WordSet(english: ["hello", "help", "the"], thai: ["สวัสดี", "แมว", "ทำ"])
 
-func typeAll(_ text: String, in language: Language, _ corrector: inout Corrector) -> [Correction] {
-    text.unicodeScalars.compactMap { corrector.type($0, in: language) }
+func typeAll(_ text: String, in language: Language, _ corrector: inout Corrector, rules: Rules = Rules()) -> [Correction] {
+    text.unicodeScalars.compactMap { corrector.type($0, in: language, rules: rules) }
 }
 
 func onThaiLayout(_ english: String) -> String {
@@ -78,22 +78,25 @@ func onThaiLayout(_ english: String) -> String {
 @Test func backspaceRightAfterCorrectionRestoresWhatWasTyped() {
     var corrector = Corrector(lexicon: lexicon)
     #expect(typeAll("l;y", in: .english, &corrector).count == 1)
-    #expect(corrector.backspace() == Correction(deleteCount: 3, insert: "l;y", switchTo: .english))
+    #expect(corrector.backspace() == Undo(
+        correction: Correction(deleteCount: 3, insert: "l;y", switchTo: .english),
+        learned: IgnoredWord(text: "l;y", language: .english)))
     #expect(typeAll("l", in: .english, &corrector).isEmpty)
 }
 
-@Test func undoneWordIsNeverCorrectedAgain() {
+@Test func learnedWordIsNeverCorrectedAgain() {
     var corrector = Corrector(lexicon: lexicon)
     _ = typeAll("l;y", in: .english, &corrector)
-    _ = corrector.backspace()
+    let undo = corrector.backspace()!
     corrector.boundary()
-    #expect(typeAll("l;ylfu", in: .english, &corrector).isEmpty)
-    #expect(corrector.ignored == [IgnoredWord(text: "l;y", language: .english)])
+    let rules = Rules(ignored: [undo.learned])
+    #expect(typeAll("l;ylfu", in: .english, &corrector, rules: rules).isEmpty)
 }
 
 @Test func ignoredWordOnlyAppliesToItsLanguage() {
-    var corrector = Corrector(lexicon: lexicon, ignored: [IgnoredWord(text: "l;y", language: .thai)])
-    #expect(typeAll("l;y", in: .english, &corrector).count == 1)
+    var corrector = Corrector(lexicon: lexicon)
+    let rules = Rules(ignored: [IgnoredWord(text: "l;y", language: .thai)])
+    #expect(typeAll("l;y", in: .english, &corrector, rules: rules).count == 1)
 }
 
 @Test func backspaceAfterTypingOnPastCorrectionIsAPlainBackspace() {
@@ -101,13 +104,20 @@ func onThaiLayout(_ english: String) -> String {
     _ = typeAll("l;y", in: .english, &corrector)
     #expect(typeAll("ส", in: .thai, &corrector).isEmpty)
     #expect(corrector.backspace() == nil)
-    #expect(corrector.ignored.isEmpty)
 }
 
-@Test func forgettingIgnoredWordsRestoresCorrection() {
-    var corrector = Corrector(lexicon: lexicon, ignored: [IgnoredWord(text: "l;y", language: .english)])
-    corrector.forgetIgnored()
-    #expect(typeAll("l;y", in: .english, &corrector).count == 1)
+@Test func lowerMinimumLengthCorrectsSooner() {
+    var corrector = Corrector(lexicon: WordSet(english: [], thai: ["นะ"]))
+    #expect(typeAll("ot", in: .english, &corrector).isEmpty)
+    corrector.boundary()
+    #expect(typeAll("ot", in: .english, &corrector, rules: Rules(minimumLength: 2))
+        == [Correction(deleteCount: 1, insert: "นะ", switchTo: .thai)])
+}
+
+@Test func higherMinimumLengthWaitsLonger() {
+    var corrector = Corrector(lexicon: lexicon)
+    #expect(typeAll("l;y", in: .english, &corrector, rules: Rules(minimumLength: 4)).isEmpty)
+    #expect(typeAll("l", in: .english, &corrector, rules: Rules(minimumLength: 4)).count == 1)
 }
 
 @Test func selectionTypedOnEnglishLayoutConvertsToThai() {
