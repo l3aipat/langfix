@@ -11,5 +11,7 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS"
 lipo -create -output "$app/Contents/MacOS/LangFix" .build/arm64/release/LangFix .build/x86_64/release/LangFix
 cp Resources/Info.plist "$app/Contents/Info.plist"
+mkdir -p "$app/Contents/Resources"
+cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 codesign --force --sign - "$app"
 echo "$app"
