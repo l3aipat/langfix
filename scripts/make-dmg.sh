@@ -9,6 +9,7 @@ rm -rf "$stage"
 mkdir -p "$stage"
 cp -R build/LangFix.app "$stage/"
 ln -s /Applications "$stage/Applications"
+cp "Resources/อ่านก่อนติดตั้ง.txt" "$stage/"
 dmg="build/LangFix-$version.dmg"
 rm -f "$dmg"
 hdiutil create -volname LangFix -srcfolder "$stage" -format UDZO -ov "$dmg" >/dev/null
