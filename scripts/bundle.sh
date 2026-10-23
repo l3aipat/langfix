@@ -10,6 +10,8 @@ app=build/LangFix.app
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS"
 lipo -create -output "$app/Contents/MacOS/LangFix" .build/arm64/release/LangFix .build/x86_64/release/LangFix
+# Drop internal symbol names so the shipped binary says less about how it works.
+strip -x "$app/Contents/MacOS/LangFix" 2>/dev/null
 cp Resources/Info.plist "$app/Contents/Info.plist"
 mkdir -p "$app/Contents/Resources"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
