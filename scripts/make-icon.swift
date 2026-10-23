@@ -1,5 +1,6 @@
 // Draws the app icon and writes Resources/AppIcon.icns.
-// usage: swift scripts/make-icon.swift <style>              build the icon in one style
+// usage: ICON_FONT=K2D swift scripts/make-icon.swift split   rebuild the shipped icon
+//        swift scripts/make-icon.swift <style>              build the icon in one style
 //        swift scripts/make-icon.swift previews             write every style side by side to build/icon-styles.png
 //        swift scripts/make-icon.swift png <style> <out>    write one 1024 px PNG without touching the app icon
 // ICON_FONT picks the typeface, such as "K2D"; the system font otherwise. Prefer an OFL font for
