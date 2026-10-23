@@ -1,6 +1,7 @@
 // Renders a 1080x1920 promo clip of LangFix fixing wrong-layout typing to build/LangFix-promo.mp4.
 // Every scene shows behaviour the app really has; the typing is drawn, not screen-recorded.
-// usage: swift scripts/make-promo.swift [stills]   (stills also writes a few frames as PNGs)
+// usage: [PROMO_FONT=<family>] swift scripts/make-promo.swift [stills | still <seconds> <out.png>]
+//        PROMO_FONT picks the typeface, such as "K2D" or "Sukhumvit Set"; the system font otherwise.
 import AppKit
 import AVFoundation
 
@@ -64,11 +65,24 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
 }
 let navy = color(0x1D3557), coral = color(0xE76F51), ink = color(0x1F2430), paper = color(0xFFFFFF)
 
+let family = ProcessInfo.processInfo.environment["PROMO_FONT"]
+
+/// The member of `family` whose weight is closest to `weight`, skipping italics.
+func font(size: CGFloat, weight: NSFont.Weight) -> NSFont {
+    guard let family, let members = NSFontManager.shared.availableMembers(ofFontFamily: family) else {
+        return .systemFont(ofSize: size, weight: weight)
+    }
+    let target = weight == .bold ? 9 : weight == .semibold ? 8 : weight == .medium ? 6 : 5
+    let upright = members.filter { (($0[3] as? UInt) ?? 0) & NSFontTraitMask.italicFontMask.rawValue == 0 }
+    let best = upright.min { abs(($0[2] as? Int ?? 5) - target) < abs(($1[2] as? Int ?? 5) - target) }
+    return (best?[0] as? String).flatMap { NSFont(name: $0, size: size) } ?? .systemFont(ofSize: size, weight: weight)
+}
+
 @discardableResult
 func text(_ string: String, size: CGFloat, weight: NSFont.Weight = .bold, color: NSColor, center: CGPoint? = nil,
           origin: CGPoint? = nil, alpha: CGFloat = 1) -> NSSize {
     let attributed = NSAttributedString(string: string, attributes: [
-        .font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: color.withAlphaComponent(alpha),
+        .font: font(size: size, weight: weight), .foregroundColor: color.withAlphaComponent(alpha),
     ])
     let bounds = attributed.size()
     let point = origin ?? CGPoint(x: center!.x - bounds.width / 2, y: center!.y - bounds.height / 2)
@@ -166,13 +180,22 @@ let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingL
 let out = root.appendingPathComponent("build/LangFix-promo.mp4")
 try? FileManager.default.removeItem(at: out)
 
-if CommandLine.arguments.dropFirst().first == "stills" {
+func still(_ t: Double, to url: URL) throws {
+    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8,
+                               samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                               bytesPerRow: 0, bitsPerPixel: 0)!
+    render(t, into: NSGraphicsContext(bitmapImageRep: rep)!.cgContext)
+    try rep.representation(using: .png, properties: [:])!.write(to: url)
+}
+
+let arguments = Array(CommandLine.arguments.dropFirst())
+if arguments.first == "still", arguments.count == 3, let t = Double(arguments[1]) {
+    try still(t, to: URL(fileURLWithPath: arguments[2]))
+    exit(0)
+}
+if arguments.first == "stills" {
     for t in [2.8, 5.2, 9.9, 13.9, 17.6, 21.5] {
-        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8,
-                                   samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-                                   bytesPerRow: 0, bitsPerPixel: 0)!
-        render(t, into: NSGraphicsContext(bitmapImageRep: rep)!.cgContext)
-        try rep.representation(using: .png, properties: [:])!.write(to: root.appendingPathComponent("build/promo-\(t).png"))
+        try still(t, to: root.appendingPathComponent("build/promo-\(t).png"))
     }
 }
 
