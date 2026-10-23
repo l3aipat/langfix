@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var monitor = KeyboardMonitor(preferences: preferences)
     private lazy var settingsWindow: NSWindow = {
         let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(preferences: preferences)))
-        window.title = "LangFix Settings"
+        window.title = String(localized: "LangFix Settings")
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.center()
@@ -16,12 +16,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let statsItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let toggleItem = NSMenuItem(title: "Auto-correct layout", action: #selector(toggle), keyEquivalent: "")
+    private let toggleItem = NSMenuItem(title: String(localized: "Auto-correct layout"), action: #selector(toggle), keyEquivalent: "")
     private let excludeItem = NSMenuItem(title: "", action: #selector(toggleExcluded), keyEquivalent: "")
-    private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
-    private let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+    private let loginItem = NSMenuItem(title: String(localized: "Open at Login"), action: #selector(toggleLogin), keyEquivalent: "")
+    private let settingsItem = NSMenuItem(title: String(localized: "Settings…"), action: #selector(openSettings), keyEquivalent: ",")
     private let permissionItem = NSMenuItem(
-        title: "Turn on LangFix in Accessibility settings…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        title: String(localized: "Turn on LangFix in Accessibility settings…"), action: #selector(openAccessibilitySettings), keyEquivalent: "")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let menu = NSMenu()
@@ -40,13 +40,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit LangFix", action: #selector(NSApp.terminate), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: String(localized: "Quit LangFix"), action: #selector(NSApp.terminate), keyEquivalent: "q"))
         menu.delegate = self
         statusItem.menu = menu
         registerLoginItemOnFirstLaunch()
 
         guard InputSources.bothInstalled() else {
-            setStatus("ก/a ⚠︎", tooltip: "Add both a Thai and an English keyboard in System Settings › Keyboard.")
+            setStatus("ก/a ⚠︎", tooltip: String(localized: "Add both a Thai and an English keyboard in System Settings › Keyboard."))
             return
         }
         startWhenTrusted(prompt: true)
@@ -57,15 +57,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: prompt] as CFDictionary
         if AXIsProcessTrustedWithOptions(options), monitor.start() {
             permissionItem.isHidden = true
-            setStatus("ก/a", tooltip: "LangFix is fixing wrong-layout typing")
+            setStatus("ก/a", tooltip: String(localized: "LangFix is fixing wrong-layout typing"))
             return
         }
         // After an update the old switch can still look on, so say how to reset it.
         permissionItem.isHidden = false
-        setStatus("ก/a ⚠︎", tooltip: """
+        setStatus("ก/a ⚠︎", tooltip: String(localized: """
             LangFix needs Accessibility permission. If LangFix is already switched on there, \
             remove it with − and add it again.
-            """)
+            """))
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.startWhenTrusted(prompt: false) }
     }
 
@@ -115,10 +115,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 extension AppDelegate: NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         let stats = preferences.stats
-        statsItem.title = "Fixed \(stats.fixed) word\(stats.fixed == 1 ? "" : "s"), \(stats.undone) undone"
+        statsItem.title = String(localized: "Fixed: \(stats.fixed) · Undone: \(stats.undone)")
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         let front = NSWorkspace.shared.frontmostApplication
-        excludeItem.title = "Off in \(front?.localizedName ?? "this app")"
+        excludeItem.title = String(localized: "Off in \(front?.localizedName ?? String(localized: "this app"))")
         excludeItem.state = preferences.excludedApps.contains(front?.bundleIdentifier ?? "") ? .on : .off
         // While Settings is open LangFix itself is frontmost, and turning it off there means nothing.
         excludeItem.isHidden = front?.bundleIdentifier == nil || front == .current

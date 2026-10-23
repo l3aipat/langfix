@@ -13,5 +13,6 @@ lipo -create -output "$app/Contents/MacOS/LangFix" .build/arm64/release/LangFix 
 cp Resources/Info.plist "$app/Contents/Info.plist"
 mkdir -p "$app/Contents/Resources"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
+cp -R Resources/th.lproj "$app/Contents/Resources/"
 codesign --force --sign - "$app"
 echo "$app"

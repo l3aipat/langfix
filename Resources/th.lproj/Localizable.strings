@@ -1,0 +1,38 @@
+/* Menu */
+"Auto-correct layout" = "แก้แป้นอัตโนมัติ";
+"Open at Login" = "เปิดอัตโนมัติตอนเข้าเครื่อง";
+"Settings…" = "ตั้งค่า…";
+"Turn on LangFix in Accessibility settings…" = "เปิดสิทธิ์ LangFix ใน Accessibility…";
+"Quit LangFix" = "ปิด LangFix";
+"Fixed: %lld · Undone: %lld" = "แก้แล้ว %lld คำ · ย้อนกลับ %lld คำ";
+"Off in %@" = "ปิดใน %@";
+"this app" = "แอปนี้";
+
+/* Status item tooltips */
+"Add both a Thai and an English keyboard in System Settings › Keyboard." = "เพิ่มแป้นทั้งภาษาไทยและอังกฤษที่ System Settings › Keyboard";
+"LangFix is fixing wrong-layout typing" = "LangFix กำลังแก้คำที่พิมพ์ผิดแป้น";
+"LangFix needs Accessibility permission. If LangFix is already switched on there, remove it with − and add it again." = "LangFix ต้องได้สิทธิ์ Accessibility ถ้าสวิตช์ของ LangFix เปิดอยู่แล้ว ให้ลบออกด้วยปุ่ม − แล้วเพิ่มกลับเข้าไปใหม่";
+
+/* Settings */
+"LangFix Settings" = "ตั้งค่า LangFix";
+"Correction" = "การแก้คำ";
+"Check a word after %lld letters" = "เริ่มตรวจคำเมื่อพิมพ์ได้ %lld ตัว";
+"Fewer letters fixes short words sooner but changes more words by mistake. 3 is recommended." = "ยิ่งน้อย ยิ่งแก้คำสั้นได้เร็ว แต่จะแก้ผิดบ่อยขึ้น แนะนำ 3";
+"Switch to each app’s last layout" = "สลับเป็นแป้นที่ใช้ล่าสุดของแต่ละแอป";
+"Show ก or A next to the cursor when the layout changes" = "แสดง ก หรือ A ข้างเคอร์เซอร์เมื่อแป้นเปลี่ยน";
+"Since %@" = "ตั้งแต่ %@";
+"Words fixed while typing" = "คำที่แก้ระหว่างพิมพ์";
+"Undone with Delete" = "ย้อนกลับด้วย Delete";
+"Selections converted" = "ข้อความที่แปลงด้วย Option+Shift+Space";
+"Reset Counts" = "ล้างตัวเลข";
+"Words LangFix leaves alone" = "คำที่ LangFix ไม่แก้";
+"Add a word, such as 555 or จุงเบย" = "เพิ่มคำ เช่น 555 หรือ จุงเบย";
+"Add" = "เพิ่ม";
+"Words are also added when you press Delete right after LangFix changes one." = "คำจะถูกเพิ่มเองด้วย เมื่อกด Delete ทันทีหลัง LangFix แก้คำนั้น";
+"not changed to %@" = "ไม่แปลงเป็น %@";
+"Let LangFix correct this word again" = "ให้ LangFix แก้คำนี้ได้อีก";
+"Remove All" = "ลบทั้งหมด";
+"Turned off in" = "ปิดในแอป";
+"LangFix works in every app." = "LangFix ทำงานในทุกแอป";
+"Turn LangFix back on in this app" = "เปิด LangFix ในแอปนี้อีกครั้ง";
+"To add an app, open it, then choose “Off in …” from the LangFix menu." = "จะเพิ่มแอป ให้เปิดแอปนั้น แล้วเลือก “ปิดใน …” จากเมนู LangFix";
