@@ -1,7 +1,10 @@
 // Renders a 1080x1920 promo clip of LangFix fixing wrong-layout typing to build/LangFix-promo.mp4.
 // Every scene shows behaviour the app really has; the typing is drawn, not screen-recorded.
 // usage: [PROMO_FONT=<family>] swift scripts/make-promo.swift [stills | still <seconds> <out.png>]
-//        PROMO_FONT picks the typeface, such as "K2D" or "Sukhumvit Set"; the system font otherwise.
+//        PROMO_FONT picks the typeface, such as "K2D"; the system font otherwise. Prefer an OFL font,
+//        since Apple's fonts are licensed for displaying content on macOS, not for ads.
+//        PROMO_FORMAT=story ends on a vote prompt with room for an Instagram poll sticker, and keeps
+//        text clear of the account bar at the top and the reply bar at the bottom of a Story.
 import AppKit
 import AVFoundation
 
@@ -66,6 +69,7 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
 let navy = color(0x1D3557), coral = color(0xE76F51), ink = color(0x1F2430), paper = color(0xFFFFFF)
 
 let family = ProcessInfo.processInfo.environment["PROMO_FONT"]
+let isStory = ProcessInfo.processInfo.environment["PROMO_FORMAT"] == "story"
 
 /// The member of `family` whose weight is closest to `weight`, skipping italics.
 func font(size: CGFloat, weight: NSFont.Weight) -> NSFont {
@@ -112,6 +116,18 @@ func drawFrame(_ t: Double) {
     text(scene.subcaption, size: 44, weight: .medium, color: paper, center: CGPoint(x: 540, y: scene.isFinale ? 1440 : 1450),
          alpha: captionIn * 0.85)
 
+    if scene.isFinale, isStory {
+        let pop = ease(local / 0.5)
+        let side: CGFloat = 340 * (0.8 + 0.2 * pop)
+        icon?.draw(in: NSRect(x: 540 - side / 2, y: 1130 - side / 2, width: side, height: side), from: .zero,
+                   operation: .sourceOver, fraction: pop)
+        let ctaIn = ease((local - 0.8) / 0.4)
+        text("ทำงานในเครื่อง ไม่ส่งข้อความที่พิมพ์ออกไปไหน", size: 36, weight: .medium, color: paper,
+             center: CGPoint(x: 540, y: 900), alpha: ctaIn * 0.85)
+        // Left empty below this line: the poll sticker is added in Instagram when posting.
+        text("อยากได้ไหม? โหวตเลย 👇", size: 68, color: paper, center: CGPoint(x: 540, y: 780), alpha: ctaIn)
+        return
+    }
     if scene.isFinale {
         let pop = ease(local / 0.5)
         let side: CGFloat = 420 * (0.8 + 0.2 * pop)
@@ -177,8 +193,7 @@ func render(_ t: Double, into context: CGContext) {
 }
 
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-let out = root.appendingPathComponent("build/LangFix-promo.mp4")
-try? FileManager.default.removeItem(at: out)
+let out = root.appendingPathComponent(isStory ? "build/LangFix-story.mp4" : "build/LangFix-promo.mp4")
 
 func still(_ t: Double, to url: URL) throws {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8,
@@ -199,6 +214,7 @@ if arguments.first == "stills" {
     }
 }
 
+try? FileManager.default.removeItem(at: out)
 let writer = try AVAssetWriter(outputURL: out, fileType: .mp4)
 let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
     AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
