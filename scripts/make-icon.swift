@@ -1,6 +1,9 @@
 // Draws the app icon and writes Resources/AppIcon.icns.
-// usage: swift scripts/make-icon.swift <style>       build the icon in one style
-//        swift scripts/make-icon.swift previews      write every style side by side to build/icon-styles.png
+// usage: swift scripts/make-icon.swift <style>              build the icon in one style
+//        swift scripts/make-icon.swift previews             write every style side by side to build/icon-styles.png
+//        swift scripts/make-icon.swift png <style> <out>    write one 1024 px PNG without touching the app icon
+// ICON_FONT picks the typeface, such as "K2D"; the system font otherwise. Prefer an OFL font for
+// anything distributed, since Apple's fonts are licensed for displaying content on macOS.
 import AppKit
 
 enum Style: String, CaseIterable {
@@ -15,9 +18,19 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
             blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
 }
 
+let family = ProcessInfo.processInfo.environment["ICON_FONT"]
+
+func font(size: CGFloat, weight: NSFont.Weight, monospaced: Bool) -> NSFont {
+    if let family, let font = NSFontManager.shared.font(withFamily: family, traits: weight >= .semibold ? .boldFontMask : [],
+                                                         weight: weight >= .semibold ? 9 : 5, size: size) {
+        return font
+    }
+    return monospaced ? .monospacedSystemFont(ofSize: size, weight: weight) : .systemFont(ofSize: size, weight: weight)
+}
+
 func text(_ string: String, size: CGFloat, weight: NSFont.Weight = .bold, color: NSColor = .white,
           center: CGPoint, monospaced: Bool = false) {
-    let font = monospaced ? NSFont.monospacedSystemFont(ofSize: size, weight: weight) : NSFont.systemFont(ofSize: size, weight: weight)
+    let font = font(size: size, weight: weight, monospaced: monospaced)
     let attributed = NSAttributedString(string: string, attributes: [.font: font, .foregroundColor: color])
     let bounds = attributed.size()
     attributed.draw(at: CGPoint(x: center.x - bounds.width / 2, y: center.y - bounds.height / 2))
@@ -143,6 +156,11 @@ if argument == "previews" {
     let out = root.appendingPathComponent("build/icon-styles.png")
     try png(sheet).write(to: out)
     print("wrote \(out.path)")
+    exit(0)
+}
+
+if argument == "png", CommandLine.arguments.count == 4, let style = Style(rawValue: CommandLine.arguments[2]) {
+    try png(render(style, size: 1024)).write(to: URL(fileURLWithPath: CommandLine.arguments[3]))
     exit(0)
 }
 
