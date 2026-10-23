@@ -19,6 +19,7 @@ final class KeyboardMonitor {
     /// The layout LangFix last selected, so its own switch is not mistaken for the user's.
     private var selectedByUs: Language?
     private var frontmostApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+    private let badge = LayoutBadge()
 
     init(preferences: Preferences) {
         self.preferences = preferences
@@ -40,7 +41,10 @@ final class KeyboardMonitor {
             let current = InputSources.current()
             if current != selectedByUs { corrector.boundary() }
             selectedByUs = nil
-            if let app = frontmostApp, app != Bundle.main.bundleIdentifier { preferences.appLayouts[app] = current }
+            if let app = frontmostApp, app != Bundle.main.bundleIdentifier {
+                preferences.appLayouts[app] = current
+                if enabled, preferences.showLayoutBadge { badge.show(current) }
+            }
         }
     }
 

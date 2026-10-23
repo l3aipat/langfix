@@ -16,6 +16,7 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Toggle("Switch to each app’s last layout", isOn: $preferences.rememberLayoutPerApp)
+                Toggle("Show ก or A next to the cursor when the layout changes", isOn: $preferences.showLayoutBadge)
             }
 
             Section("Since \(preferences.stats.since.formatted(date: .abbreviated, time: .omitted))") {

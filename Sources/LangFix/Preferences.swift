@@ -19,6 +19,7 @@ final class Preferences: ObservableObject {
         static let stats = "stats"
         static let rememberLayouts = "rememberLayoutPerApp"
         static let appLayouts = "appLayouts"
+        static let showBadge = "showLayoutBadge"
     }
 
     private let defaults: UserDefaults
@@ -46,6 +47,10 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(try? JSONEncoder().encode(appLayouts), forKey: Key.appLayouts) }
     }
 
+    @Published var showLayoutBadge: Bool {
+        didSet { defaults.set(showLayoutBadge, forKey: Key.showBadge) }
+    }
+
     var rules: Rules { Rules(minimumLength: minimumLength, ignored: ignored) }
 
     init(defaults: UserDefaults = .standard) {
@@ -53,6 +58,7 @@ final class Preferences: ObservableObject {
             Key.minimumLength: Rules().minimumLength,
             Key.excluded: ["com.apple.Terminal", "com.googlecode.iterm2"],
             Key.rememberLayouts: true,
+            Key.showBadge: true,
         ])
         self.defaults = defaults
         let length = defaults.integer(forKey: Key.minimumLength)
@@ -62,6 +68,7 @@ final class Preferences: ObservableObject {
         excludedApps = Set(defaults.stringArray(forKey: Key.excluded) ?? [])
         stats = defaults.data(forKey: Key.stats).flatMap { try? JSONDecoder().decode(Stats.self, from: $0) } ?? Stats()
         rememberLayoutPerApp = defaults.bool(forKey: Key.rememberLayouts)
+        showLayoutBadge = defaults.bool(forKey: Key.showBadge)
         appLayouts = defaults.data(forKey: Key.appLayouts)
             .flatMap { try? JSONDecoder().decode([String: Language].self, from: $0) } ?? [:]
     }
