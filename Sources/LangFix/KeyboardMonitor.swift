@@ -16,8 +16,6 @@ final class KeyboardMonitor {
     private var corrector = Corrector(lexicon: SpellLexicon())
     private var tap: CFMachPort?
     private let source = CGEventSource(stateID: .privateState)
-    /// The layout LangFix last selected, so its own switch is not mistaken for the user's.
-    private var selectedByUs: Language?
     private var frontmostApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
     private let badge = LayoutBadge()
 
@@ -32,15 +30,13 @@ final class KeyboardMonitor {
             self?.corrector.boundary()
             self?.restoreLayout()
         }
-        // A user switching layout means they are starting over, often mid-line with no space typed.
+        // Remember each app's layout and flash the badge. Word boundaries come from the keys themselves.
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
             object: nil, queue: .main
         ) { [weak self] _ in
             guard let self else { return }
             let current = InputSources.current()
-            if current != selectedByUs { corrector.boundary() }
-            selectedByUs = nil
             if let app = frontmostApp, app != Bundle.main.bundleIdentifier {
                 preferences.appLayouts[app] = current
                 if enabled, preferences.showLayoutBadge { badge.show(current) }
@@ -52,7 +48,6 @@ final class KeyboardMonitor {
         guard enabled, preferences.rememberLayoutPerApp, let app = frontmostApp,
               let layout = preferences.appLayouts[app], layout != InputSources.current()
         else { return }
-        selectedByUs = layout
         InputSources.select(layout)
     }
 
@@ -100,7 +95,7 @@ final class KeyboardMonitor {
         if keyCode == Self.deleteKeyCode {
             guard let undo = corrector.backspace() else { return pass }
             apply(undo.correction)
-            preferences.ignored.insert(undo.learned)
+            preferences.recordUndo(of: undo.learned)
             preferences.stats.undone += 1
             return nil
         }
@@ -144,7 +139,6 @@ final class KeyboardMonitor {
             pasteboard.setString(converted, forType: .string)
             self.post(keyCode: Self.pasteKeyCode, flags: .maskCommand)
             self.preferences.stats.converted += 1
-            self.selectedByUs = language
             InputSources.select(language)
             // The paste reads the clipboard asynchronously, so restore only after it has landed.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -167,7 +161,6 @@ final class KeyboardMonitor {
     }
 
     private func apply(_ correction: Correction) {
-        selectedByUs = correction.switchTo
         InputSources.select(correction.switchTo)
         for _ in 0..<correction.deleteCount {
             post(keyCode: CGKeyCode(Self.deleteKeyCode))

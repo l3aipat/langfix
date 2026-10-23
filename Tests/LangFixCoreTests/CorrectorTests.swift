@@ -186,3 +186,42 @@ let shortWords = WordSet(english: ["other", "ok"], thai: ["นะ", "ไม่"]
     #expect(typeAll("l;y", in: .english, &corrector).count == 1)
     #expect(corrector.endWord(in: .thai) == nil)
 }
+
+@Test func wordIsLearnedOnlyAfterReachingTheUndoThreshold() {
+    var tally = UndoTally()
+    let word = IgnoredWord(text: "ยพน", language: .thai)
+    let results = (1...3).map { _ in tally.record(word, threshold: 2) }
+    #expect(results == [false, true, false], "learned on the second undo, then the count starts over")
+}
+
+@Test func thresholdOfOneLearnsOnTheFirstUndo() {
+    var tally = UndoTally()
+    let learned = tally.record(IgnoredWord(text: "l;y", language: .english), threshold: 1)
+    #expect(learned)
+}
+
+@Test func undosOfDifferentWordsDoNotAddUp() {
+    var tally = UndoTally()
+    let words = [IgnoredWord(text: "l;y", language: .english), IgnoredWord(text: "ยพน", language: .thai),
+                 IgnoredWord(text: "l;y", language: .thai)]
+    let results = words.map { tally.record($0, threshold: 2) }
+    #expect(results == [false, false, false])
+}
+
+@Test func switchingLayoutBackAfterACorrectionStartsANewWord() {
+    var corrector = Corrector(lexicon: lexicon)
+    #expect(typeAll("l;y", in: .english, &corrector).count == 1)
+    #expect(typeAll("l;y", in: .english, &corrector) == [Correction(deleteCount: 2, insert: "สวั", switchTo: .thai)])
+}
+
+@Test func typingOnAfterACorrectionStaysInTheSameWord() {
+    var corrector = Corrector(lexicon: lexicon)
+    _ = typeAll("l;y", in: .english, &corrector)
+    #expect(typeAll("สด", in: .thai, &corrector).isEmpty)
+}
+
+@Test func switchingLayoutMidWordStartsANewWord() {
+    var corrector = Corrector(lexicon: lexicon)
+    #expect(typeAll("xq", in: .english, &corrector).isEmpty)
+    #expect(typeAll("้ำส", in: .thai, &corrector) == [Correction(deleteCount: 2, insert: "hel", switchTo: .english)])
+}

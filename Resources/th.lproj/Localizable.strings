@@ -28,7 +28,8 @@
 "Words LangFix leaves alone" = "คำที่ LangFix ไม่แก้";
 "Add a word, such as 555 or จุงเบย" = "เพิ่มคำ เช่น 555 หรือ จุงเบย";
 "Add" = "เพิ่ม";
-"Words are also added when you press Delete right after LangFix changes one." = "คำจะถูกเพิ่มเองด้วย เมื่อกด Delete ทันทีหลัง LangFix แก้คำนั้น";
+"Add a word after undoing it %lld times" = "เพิ่มคำเมื่อย้อนกลับคำเดิมครบ %lld ครั้ง";
+"Pressing Delete right after LangFix changes a word undoes the change. Once you undo the same word this many times, it is added here." = "กด Delete ทันทีหลัง LangFix แก้คำ จะเป็นการย้อนกลับ ถ้าย้อนกลับคำเดิมครบตามจำนวนนี้ คำนั้นจะถูกเพิ่มที่นี่";
 "not changed to %@" = "ไม่แปลงเป็น %@";
 "Let LangFix correct this word again" = "ให้ LangFix แก้คำนี้ได้อีก";
 "Remove All" = "ลบทั้งหมด";

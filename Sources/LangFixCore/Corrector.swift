@@ -23,6 +23,23 @@ public struct IgnoredWord: Hashable, Codable, Sendable {
     }
 }
 
+/// Counts undos per word, so one stray Delete right after a correction does not teach LangFix
+/// to leave that word alone forever.
+public struct UndoTally: Codable, Equatable, Sendable {
+    public static let thresholdRange = 1...5
+
+    var counts: [IgnoredWord: Int] = [:]
+
+    public init() {}
+
+    /// Returns true when `word` has now been undone `threshold` times and should be left alone.
+    public mutating func record(_ word: IgnoredWord, threshold: Int) -> Bool {
+        let count = counts[word, default: 0] + 1
+        counts[word] = count >= threshold ? nil : count
+        return count >= threshold
+    }
+}
+
 /// The user's settings that shape each decision.
 public struct Rules: Equatable, Sendable {
     public static let lengthRange = 2...6
@@ -64,6 +81,10 @@ public struct Corrector {
 
     let lexicon: Lexicon
     var state = WordState.watching([])
+    /// The layout the current word's keys come from. A key from the other layout means the user
+    /// switched layouts, which starts a new word. Reading this from the keys themselves avoids
+    /// depending on when macOS delivers its layout-change notification.
+    var wordLanguage: Language?
 
     public init(lexicon: Lexicon) {
         self.lexicon = lexicon
@@ -72,6 +93,7 @@ public struct Corrector {
     /// Anything that ends a word: space, return, arrows, a click, an app switch.
     public mutating func boundary() {
         state = .watching([])
+        wordLanguage = nil
     }
 
     /// Returns an undo when the backspace lands right after a correction. The caller swallows
@@ -80,6 +102,7 @@ public struct Corrector {
         switch state {
         case .corrected(let undo, _):
             state = .settled
+            wordLanguage = undo.correction.switchTo
             return undo
         case .watching(var keys):
             state = keys.popLast() == nil ? .settled : .watching(keys)
@@ -93,6 +116,8 @@ public struct Corrector {
     /// so far reads as garbage in `language` but as a real prefix in the other layout.
     public mutating func type(_ character: Unicode.Scalar, in language: Language, rules: Rules = Rules()) -> Correction? {
         if case .corrected(_, atWordEnd: true) = state { state = .watching([]) }
+        if let wordLanguage, wordLanguage != language { state = .watching([]) }
+        wordLanguage = language
         guard case .watching(var keys) = state else {
             state = .settled
             return nil
@@ -117,6 +142,7 @@ public struct Corrector {
         state = .corrected(Undo(
             correction: Correction(deleteCount: converted.unicodeScalars.count, insert: typed, switchTo: language),
             learned: IgnoredWord(text: typed, language: language)), atWordEnd: false)
+        wordLanguage = other
         return Correction(deleteCount: keys.count - 1, insert: converted, switchTo: other)
     }
 
@@ -129,6 +155,7 @@ public struct Corrector {
             return nil
         }
         state = .watching([])
+        wordLanguage = nil
         let typed = Keyboard.text(keys, in: language)
         let other = language.other
         let converted = Keyboard.text(keys, in: other)
@@ -138,6 +165,7 @@ public struct Corrector {
         state = .corrected(Undo(
             correction: Correction(deleteCount: converted.unicodeScalars.count + 1, insert: typed + " ", switchTo: language),
             learned: IgnoredWord(text: typed, language: language)), atWordEnd: true)
+        wordLanguage = other
         return Correction(deleteCount: keys.count, insert: converted + " ", switchTo: other)
     }
 }

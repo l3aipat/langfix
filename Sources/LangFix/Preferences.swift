@@ -20,6 +20,8 @@ final class Preferences: ObservableObject {
         static let rememberLayouts = "rememberLayoutPerApp"
         static let appLayouts = "appLayouts"
         static let showBadge = "showLayoutBadge"
+        static let undosToLearn = "undosToLearn"
+        static let undoTally = "undoTally"
     }
 
     private let defaults: UserDefaults
@@ -51,6 +53,18 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(showLayoutBadge, forKey: Key.showBadge) }
     }
 
+    /// How many times a word must be undone before LangFix leaves it alone.
+    @Published var undosToLearn: Int {
+        didSet { defaults.set(undosToLearn, forKey: Key.undosToLearn) }
+    }
+    @Published var undoTally: UndoTally {
+        didSet { defaults.set(try? JSONEncoder().encode(undoTally), forKey: Key.undoTally) }
+    }
+
+    func recordUndo(of word: IgnoredWord) {
+        if undoTally.record(word, threshold: undosToLearn) { ignored.insert(word) }
+    }
+
     var rules: Rules { Rules(minimumLength: minimumLength, ignored: ignored) }
 
     init(defaults: UserDefaults = .standard) {
@@ -59,6 +73,7 @@ final class Preferences: ObservableObject {
             Key.excluded: ["com.apple.Terminal", "com.googlecode.iterm2"],
             Key.rememberLayouts: true,
             Key.showBadge: true,
+            Key.undosToLearn: 2,
         ])
         self.defaults = defaults
         let length = defaults.integer(forKey: Key.minimumLength)
@@ -69,6 +84,9 @@ final class Preferences: ObservableObject {
         stats = defaults.data(forKey: Key.stats).flatMap { try? JSONDecoder().decode(Stats.self, from: $0) } ?? Stats()
         rememberLayoutPerApp = defaults.bool(forKey: Key.rememberLayouts)
         showLayoutBadge = defaults.bool(forKey: Key.showBadge)
+        undosToLearn = min(max(defaults.integer(forKey: Key.undosToLearn), UndoTally.thresholdRange.lowerBound),
+                           UndoTally.thresholdRange.upperBound)
+        undoTally = defaults.data(forKey: Key.undoTally).flatMap { try? JSONDecoder().decode(UndoTally.self, from: $0) } ?? UndoTally()
         appLayouts = defaults.data(forKey: Key.appLayouts)
             .flatMap { try? JSONDecoder().decode([String: Language].self, from: $0) } ?? [:]
     }
