@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var preferences: Preferences
+    @State private var newWord = ""
 
     var body: some View {
         Form {
@@ -25,17 +26,22 @@ struct SettingsView: View {
                 Button("Reset Counts") { preferences.stats = Stats() }
             }
 
-            Section("Undone words") {
-                if preferences.ignored.isEmpty {
-                    Text("None yet. Press Delete right after LangFix changes a word, and it leaves that word alone from then on.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            Section("Words LangFix leaves alone") {
+                HStack {
+                    TextField("Add a word, such as 555 or จุงเบย", text: $newWord)
+                        .onSubmit(addWord)
+                    Button("Add", action: addWord)
+                        .disabled(newWord.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+                Text("Words are also added when you press Delete right after LangFix changes one.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 ForEach(preferences.ignored.sorted { $0.text < $1.text }, id: \.self) { word in
                     HStack {
                         Text(word.text).font(.body.monospaced())
-                        Text("not changed to \(Keyboard.convert(word.text)?.text ?? "")")
-                            .foregroundStyle(.secondary)
+                        if let converted = Keyboard.convert(word.text)?.text {
+                            Text("not changed to \(converted)").foregroundStyle(.secondary)
+                        }
                         Spacer()
                         Button { preferences.ignored.remove(word) } label: { Image(systemName: "minus.circle") }
                             .buttonStyle(.borderless)
@@ -67,6 +73,15 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 440, height: 520)
+    }
+
+    /// The word's own script says which layout it is typed on.
+    private func addWord() {
+        let text = newWord.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
+        let thai = text.unicodeScalars.contains { (0x0E00...0x0E7F).contains($0.value) }
+        preferences.ignored.insert(IgnoredWord(text: text, language: thai ? .thai : .english))
+        newWord = ""
     }
 
     private func appName(_ bundleID: String) -> String {
