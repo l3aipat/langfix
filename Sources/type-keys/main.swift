@@ -4,7 +4,8 @@ import LangFixCore
 
 // Presses physical keys as a person would, so the system layout decides what each key produces.
 // Stops before any key if `app` is not frontmost, so a test never types into someone's chat.
-// usage: type-keys <app> <keys as on a US keyboard, ⌫ for Delete> <milliseconds between keys>
+// usage: type-keys <app> <keys as on a US keyboard> <milliseconds between keys>
+// ⌫ is Delete, ⇄ is Option-Shift-Space, Ⓐ is Command-A.
 // TYPE_KEYS_LAYOUT picks the layout active before the first key (default ABC).
 let arguments = CommandLine.arguments
 guard arguments.count == 4, let gap = UInt32(arguments[3]) else {
@@ -36,6 +37,17 @@ usleep(300_000)
 
 for scalar in arguments[2].unicodeScalars {
     requireFrontmost()
+    if let (keyCode, flags): (UInt16, CGEventFlags) = [
+        "⇄": (49, [.maskAlternate, .maskShift]), "Ⓐ": (0, .maskCommand),
+    ][scalar] {
+        for down in [true, false] {
+            let event = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: down)!
+            event.flags = flags
+            event.post(tap: .cghidEventTap)
+        }
+        usleep(gap * 1000)
+        continue
+    }
     let stroke: (keyCode: UInt16, shift: Bool)
     if scalar == " " {
         stroke = (49, false)

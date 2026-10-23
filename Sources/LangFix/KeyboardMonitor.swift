@@ -7,6 +7,9 @@ final class KeyboardMonitor {
     /// Tags events we post so the tap lets them through untouched.
     private static let marker: Int64 = 0x4C46_4958
     private static let deleteKeyCode: Int64 = 51
+    private static let spaceKeyCode: Int64 = 49
+    private static let copyKeyCode: CGKeyCode = 8
+    private static let pasteKeyCode: CGKeyCode = 9
 
     private static let ignoredKey = "ignoredWords"
     private static let excludedKey = "excludedApps"
@@ -77,7 +80,14 @@ final class KeyboardMonitor {
               !excludedApps.contains(frontmostApp ?? "")
         else { return pass }
 
-        if event.getIntegerValueField(.keyboardEventKeycode) == Self.deleteKeyCode {
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        let modifiers = event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift])
+        if keyCode == Self.spaceKeyCode, modifiers == [.maskAlternate, .maskShift] {
+            corrector.boundary()
+            DispatchQueue.main.async { self.convertSelection() }
+            return nil
+        }
+        if keyCode == Self.deleteKeyCode {
             guard let undo = corrector.backspace() else { return pass }
             apply(undo)
             saveIgnored()
@@ -117,18 +127,60 @@ final class KeyboardMonitor {
         UserDefaults.standard.set(try? JSONEncoder().encode(corrector.ignored), forKey: Self.ignoredKey)
     }
 
+    /// Copies the selection, retypes it on the other layout and pastes it back. Reading the
+    /// selection through Accessibility fails in Chrome and Electron apps, the clipboard works everywhere.
+    func convertSelection() {
+        let pasteboard = NSPasteboard.general
+        let saved = pasteboard.pasteboardItems?.map { item in
+            item.types.compactMap { type in item.data(forType: type).map { (type, $0) } }
+        } ?? []
+        let before = pasteboard.changeCount
+        post(keyCode: Self.copyKeyCode, flags: .maskCommand)
+        waitForCopy(since: before, attempts: 25) { copied in
+            guard copied, let text = pasteboard.string(forType: .string),
+                  let (converted, language) = Keyboard.convert(text)
+            else {
+                NSSound.beep()
+                return
+            }
+            pasteboard.clearContents()
+            pasteboard.setString(converted, forType: .string)
+            self.post(keyCode: Self.pasteKeyCode, flags: .maskCommand)
+            self.selectedByUs = language
+            InputSources.select(language)
+            // The paste reads the clipboard asynchronously, so restore only after it has landed.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                pasteboard.clearContents()
+                pasteboard.writeObjects(saved.map { pairs in
+                    let item = NSPasteboardItem()
+                    for (type, data) in pairs { item.setData(data, forType: type) }
+                    return item
+                })
+            }
+        }
+    }
+
+    private func waitForCopy(since changeCount: Int, attempts: Int, then finish: @escaping (Bool) -> Void) {
+        if NSPasteboard.general.changeCount != changeCount { return finish(true) }
+        guard attempts > 0 else { return finish(false) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+            self.waitForCopy(since: changeCount, attempts: attempts - 1, then: finish)
+        }
+    }
+
     private func apply(_ correction: Correction) {
         selectedByUs = correction.switchTo
         InputSources.select(correction.switchTo)
         for _ in 0..<correction.deleteCount {
-            post(keyCode: CGKeyCode(Self.deleteKeyCode), text: nil)
+            post(keyCode: CGKeyCode(Self.deleteKeyCode))
         }
         post(keyCode: 0, text: correction.insert)
     }
 
-    private func post(keyCode: CGKeyCode, text: String?) {
+    private func post(keyCode: CGKeyCode, text: String? = nil, flags: CGEventFlags = []) {
         for down in [true, false] {
             guard let event = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: down) else { continue }
+            event.flags = flags
             if let text {
                 let units = Array(text.utf16)
                 event.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)

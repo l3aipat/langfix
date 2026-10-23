@@ -109,3 +109,19 @@ func onThaiLayout(_ english: String) -> String {
     corrector.forgetIgnored()
     #expect(typeAll("l;y", in: .english, &corrector).count == 1)
 }
+
+@Test func selectionTypedOnEnglishLayoutConvertsToThai() {
+    #expect(Keyboard.convert("mflv[")! == ("ทดสอบ", .thai))
+}
+
+@Test func selectionTypedOnThaiLayoutConvertsToEnglish() {
+    #expect(Keyboard.convert("้ำสสน")! == ("hello", .english))
+}
+
+@Test func selectionKeepsSpacesAndLineBreaks() {
+    #expect(Keyboard.convert("w,j mflv[\nfu")! == ("ไม่ ทดสอบ\nดี", .thai))
+}
+
+@Test func selectionWithoutLettersIsNotConverted() {
+    #expect(Keyboard.convert("  \n") == nil)
+}

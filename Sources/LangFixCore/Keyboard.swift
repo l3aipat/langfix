@@ -56,6 +56,20 @@ public enum Keyboard {
         characters(language)[position.index]
     }
 
+    /// Retypes a whole run of text on the other layout. The direction follows whichever script
+    /// dominates, and characters that no key produces (spaces, newlines) are kept as they are.
+    public static func convert(_ text: String) -> (text: String, language: Language)? {
+        let thai = text.unicodeScalars.filter { (0x0E00...0x0E7F).contains($0.value) }.count
+        let latin = text.unicodeScalars.filter { $0.properties.isAlphabetic && $0.isASCII }.count
+        guard thai + latin > 0 else { return nil }
+        let from: Language = thai > latin ? .thai : .english
+        var converted = ""
+        for scalar in text.unicodeScalars {
+            converted.unicodeScalars.append(position(of: scalar, in: from).map { character(at: $0, in: from.other) } ?? scalar)
+        }
+        return (converted, from.other)
+    }
+
     public static func text(_ keys: [KeyPosition], in language: Language) -> String {
         var text = ""
         text.unicodeScalars.append(contentsOf: keys.map { character(at: $0, in: language) })
