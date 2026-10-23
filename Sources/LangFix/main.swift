@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let monitor = KeyboardMonitor()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let toggleItem = NSMenuItem(title: "Auto-correct layout", action: #selector(toggle), keyEquivalent: "")
+    private let excludeItem = NSMenuItem(title: "", action: #selector(toggleExcluded), keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
     private let forgetItem = NSMenuItem(title: "", action: #selector(forgetIgnored), keyEquivalent: "")
     private let permissionItem = NSMenuItem(
@@ -19,6 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         toggleItem.target = self
         toggleItem.state = .on
         menu.addItem(toggleItem)
+        excludeItem.target = self
+        menu.addItem(excludeItem)
         loginItem.target = self
         menu.addItem(loginItem)
         forgetItem.target = self
@@ -71,6 +74,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? service.status == .enabled ? service.unregister() : service.register()
     }
 
+    /// LangFix never activates itself, so the frontmost app is still the one the user was typing in.
+    @objc private func toggleExcluded() {
+        guard let id = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
+        monitor.setExcluded(id, !monitor.excludedApps.contains(id))
+    }
+
     @objc private func forgetIgnored() {
         monitor.forgetIgnored()
     }
@@ -88,6 +97,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 extension AppDelegate: NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        let front = NSWorkspace.shared.frontmostApplication
+        excludeItem.title = "Off in \(front?.localizedName ?? "this app")"
+        excludeItem.state = monitor.excludedApps.contains(front?.bundleIdentifier ?? "") ? .on : .off
+        excludeItem.isHidden = front?.bundleIdentifier == nil
         let count = monitor.ignoredCount
         forgetItem.title = "Forget \(count) undone word\(count == 1 ? "" : "s")"
         forgetItem.isHidden = count == 0

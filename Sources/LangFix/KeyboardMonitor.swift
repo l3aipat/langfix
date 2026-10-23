@@ -9,6 +9,7 @@ final class KeyboardMonitor {
     private static let deleteKeyCode: Int64 = 51
 
     private static let ignoredKey = "ignoredWords"
+    private static let excludedKey = "excludedApps"
 
     var enabled = true
     private var corrector = Corrector(lexicon: SpellLexicon(), ignored: KeyboardMonitor.loadIgnored())
@@ -16,12 +17,21 @@ final class KeyboardMonitor {
     private let source = CGEventSource(stateID: .privateState)
     /// The layout LangFix last selected, so its own switch is not mistaken for the user's.
     private var selectedByUs: Language?
+    /// Bundle IDs where typing is left alone, such as terminals where commands are not words.
+    private(set) var excludedApps: Set<String>
+    private var frontmostApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
 
     init() {
+        UserDefaults.standard.register(defaults: [Self.excludedKey: ["com.apple.Terminal", "com.googlecode.iterm2"]])
+        excludedApps = Set(UserDefaults.standard.stringArray(forKey: Self.excludedKey) ?? [])
         source?.userData = Self.marker
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
-        ) { [weak self] _ in self?.corrector.boundary() }
+        ) { [weak self] notification in
+            let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            self?.frontmostApp = app?.bundleIdentifier
+            self?.corrector.boundary()
+        }
         // A user switching layout means they are starting over, often mid-line with no space typed.
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
@@ -63,7 +73,9 @@ final class KeyboardMonitor {
             corrector.boundary()
             return pass
         }
-        guard enabled, event.getIntegerValueField(.eventSourceUserData) != Self.marker else { return pass }
+        guard enabled, event.getIntegerValueField(.eventSourceUserData) != Self.marker,
+              !excludedApps.contains(frontmostApp ?? "")
+        else { return pass }
 
         if event.getIntegerValueField(.keyboardEventKeycode) == Self.deleteKeyCode {
             guard let undo = corrector.backspace() else { return pass }
@@ -85,6 +97,11 @@ final class KeyboardMonitor {
     }
 
     var ignoredCount: Int { corrector.ignored.count }
+
+    func setExcluded(_ bundleID: String, _ excluded: Bool) {
+        if excluded { excludedApps.insert(bundleID) } else { excludedApps.remove(bundleID) }
+        UserDefaults.standard.set(excludedApps.sorted(), forKey: Self.excludedKey)
+    }
 
     func forgetIgnored() {
         corrector.forgetIgnored()
