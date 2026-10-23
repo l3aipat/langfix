@@ -15,6 +15,7 @@ struct SettingsView: View {
                 Text("Fewer letters fixes short words sooner but changes more words by mistake. 3 is recommended.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("Switch to each app’s last layout", isOn: $preferences.rememberLayoutPerApp)
             }
 
             Section("Since \(preferences.stats.since.formatted(date: .abbreviated, time: .omitted))") {

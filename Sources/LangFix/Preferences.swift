@@ -17,6 +17,8 @@ final class Preferences: ObservableObject {
         static let ignored = "ignoredWords"
         static let excluded = "excludedApps"
         static let stats = "stats"
+        static let rememberLayouts = "rememberLayoutPerApp"
+        static let appLayouts = "appLayouts"
     }
 
     private let defaults: UserDefaults
@@ -36,12 +38,21 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(try? JSONEncoder().encode(stats), forKey: Key.stats) }
     }
 
+    /// Switch to the layout each app last used whenever the user comes back to it.
+    @Published var rememberLayoutPerApp: Bool {
+        didSet { defaults.set(rememberLayoutPerApp, forKey: Key.rememberLayouts) }
+    }
+    @Published var appLayouts: [String: Language] {
+        didSet { defaults.set(try? JSONEncoder().encode(appLayouts), forKey: Key.appLayouts) }
+    }
+
     var rules: Rules { Rules(minimumLength: minimumLength, ignored: ignored) }
 
     init(defaults: UserDefaults = .standard) {
         defaults.register(defaults: [
             Key.minimumLength: Rules().minimumLength,
             Key.excluded: ["com.apple.Terminal", "com.googlecode.iterm2"],
+            Key.rememberLayouts: true,
         ])
         self.defaults = defaults
         let length = defaults.integer(forKey: Key.minimumLength)
@@ -50,5 +61,8 @@ final class Preferences: ObservableObject {
             .flatMap { try? JSONDecoder().decode(Set<IgnoredWord>.self, from: $0) } ?? []
         excludedApps = Set(defaults.stringArray(forKey: Key.excluded) ?? [])
         stats = defaults.data(forKey: Key.stats).flatMap { try? JSONDecoder().decode(Stats.self, from: $0) } ?? Stats()
+        rememberLayoutPerApp = defaults.bool(forKey: Key.rememberLayouts)
+        appLayouts = defaults.data(forKey: Key.appLayouts)
+            .flatMap { try? JSONDecoder().decode([String: Language].self, from: $0) } ?? [:]
     }
 }

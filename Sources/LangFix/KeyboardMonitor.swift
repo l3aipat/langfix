@@ -29,6 +29,7 @@ final class KeyboardMonitor {
             let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
             self?.frontmostApp = app?.bundleIdentifier
             self?.corrector.boundary()
+            self?.restoreLayout()
         }
         // A user switching layout means they are starting over, often mid-line with no space typed.
         DistributedNotificationCenter.default().addObserver(
@@ -36,9 +37,19 @@ final class KeyboardMonitor {
             object: nil, queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            if InputSources.current() != selectedByUs { corrector.boundary() }
+            let current = InputSources.current()
+            if current != selectedByUs { corrector.boundary() }
             selectedByUs = nil
+            if let app = frontmostApp, app != Bundle.main.bundleIdentifier { preferences.appLayouts[app] = current }
         }
+    }
+
+    private func restoreLayout() {
+        guard enabled, preferences.rememberLayoutPerApp, let app = frontmostApp,
+              let layout = preferences.appLayouts[app], layout != InputSources.current()
+        else { return }
+        selectedByUs = layout
+        InputSources.select(layout)
     }
 
     func start() -> Bool {
