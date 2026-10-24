@@ -2,6 +2,7 @@
 "Auto-correct layout" = "แก้แป้นอัตโนมัติ";
 "Open at Login" = "เปิดอัตโนมัติตอนเข้าเครื่อง";
 "Settings…" = "ตั้งค่า…";
+"Check for Updates…" = "ตรวจหาเวอร์ชันใหม่…";
 "Turn on LangFix in Accessibility settings…" = "เปิดสิทธิ์ LangFix ใน Accessibility…";
 "Quit LangFix" = "ปิด LangFix";
 "Fixed: %lld · Undone: %lld" = "แก้แล้ว %lld คำ · ย้อนกลับ %lld คำ";
