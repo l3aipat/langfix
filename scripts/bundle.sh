@@ -18,6 +18,7 @@ cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 cp -R Resources/th.lproj "$app/Contents/Resources/"
 mkdir -p "$app/Contents/Frameworks"
 ditto .build/arm64/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework "$app/Contents/Frameworks/Sparkle.framework"
+cp .build/arm64/artifacts/sparkle/Sparkle/LICENSE "$app/Contents/Resources/Sparkle-LICENSE.txt"
 install_name_tool -add_rpath @executable_path/../Frameworks "$app/Contents/MacOS/LangFix"
 # One identity for everything inside, so Sparkle's helpers pass its "same signer" check on update.
 codesign --force --deep --sign "LangFix Signing" "$app/Contents/Frameworks/Sparkle.framework"

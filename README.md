@@ -1,62 +1,71 @@
 # LangFix
 
-แก้ข้อความที่พิมพ์ผิดแป้น ไทย/อังกฤษ ให้อัตโนมัติบน Mac
+**English** · [ไทย](README.th.md)
 
-ลืมสลับแป้นแล้วพิมพ์ `l;ylfu` ไป LangFix จะแก้เป็น `สวัสดี` และสลับแป้นให้ทันที ไม่ต้องลบแล้วพิมพ์ใหม่
+Fixes text typed on the wrong keyboard layout, Thai ↔ English, as you type on your Mac.
 
-**[⬇︎ ดาวน์โหลด LangFix](https://github.com/l3aipat/langfix/releases/latest/download/LangFix.dmg)** · ฟรี · macOS 13 ขึ้นไป
+Forgot to switch layouts and typed `l;ylfu`? LangFix turns it into `สวัสดี` and switches the layout for you. No deleting, no retyping.
 
-## ทำอะไรได้บ้าง
+**[⬇︎ Download LangFix](https://github.com/l3aipat/langfix/releases/latest/download/LangFix.dmg)** · Free · macOS 13 or later
 
-- แก้ให้เองตั้งแต่ตัวอักษรที่ 3 ส่วนคำสั้นอย่าง "นะ" จะแก้ตอนกดเว้นวรรค
-- ถ้าแก้ผิด ให้กด Delete ทันที ข้อความเดิมจะกลับมา และ LangFix จะจำคำนั้นไว้ไม่แก้อีก
-- ถ้าจะแปลงข้อความที่พิมพ์ไว้แล้ว ให้เลือกข้อความแล้วกด Option+Shift+Space
-- จำแป้นที่ใช้ล่าสุดของแต่ละแอป สลับแอปแล้วจะเปลี่ยนแป้นให้
-- ตอนแป้นเปลี่ยน จะมีป้าย ก หรือ A ขึ้นข้างเคอร์เซอร์แป๊บหนึ่ง
-- ปิดเฉพาะบางแอปได้ และเพิ่มคำที่ไม่อยากให้แก้ได้ เช่น 555
+## Features
 
-## ติดตั้ง
+- Fixes a word from its third letter. Short words such as "นะ" are fixed when you press Space.
+- Fixed something you meant? Press Delete right away. Your original text comes back, and LangFix leaves that word alone from then on.
+- To convert text you already typed, select it and press Option+Shift+Space.
+- Remembers the last layout you used in each app and switches to it when you come back.
+- Shows a small ก or A badge next to the cursor when the layout changes.
+- Can be turned off for specific apps, and you can add words it should never touch, such as 555.
 
-เครื่องต้องมีแป้นทั้งภาษาไทย (Thai) และอังกฤษ (ABC หรือ U.S.) ตั้งได้ที่ System Settings > Keyboard > Input Sources
+## Install
 
-1. [ดาวน์โหลด LangFix.dmg](https://github.com/l3aipat/langfix/releases/latest/download/LangFix.dmg) แล้วเปิดไฟล์
-2. ลาก LangFix ไปวางในโฟลเดอร์ Applications
-3. เปิด LangFix จาก Applications
-4. ถ้าขึ้นว่า "LangFix" Not Opened ให้กด Done
-   แล้วไปที่ System Settings > Privacy & Security เลื่อนลงล่างสุด กด **Open Anyway** แล้วใส่รหัสผ่านเครื่อง
-   จากนั้นเปิด LangFix อีกครั้ง และกด Open Anyway
-5. ให้สิทธิ์ Accessibility โดยคลิกไอคอน ก/a ที่แถบเมนูด้านบนขวา
-   เลือก "Turn on LangFix in Accessibility settings…" แล้วเปิดสวิตช์ของ LangFix
-6. รอให้ไอคอนเปลี่ยนจาก ก/a ⚠︎ เป็น ก/a แปลว่าพร้อมใช้งาน
+Your Mac needs both a Thai keyboard and an English one (ABC or U.S.). Add them in System Settings > Keyboard > Input Sources.
 
-### ทำไม Mac ถึงเตือนตอนเปิด
+1. [Download LangFix.dmg](https://github.com/l3aipat/langfix/releases/latest/download/LangFix.dmg) and open it.
+2. Drag LangFix into the Applications folder.
+3. Open LangFix from Applications.
+4. If you see "LangFix" Not Opened, click Done.
+   Go to System Settings > Privacy & Security, scroll to the bottom, click **Open Anyway** and enter your password.
+   Open LangFix again and click Open Anyway.
+5. Grant Accessibility access. Click the ก/a icon in the menu bar,
+   choose "Turn on LangFix in Accessibility settings…" and switch LangFix on.
+6. When the icon changes from ก/a ⚠︎ to ก/a, LangFix is ready.
 
-LangFix เป็นโปรเจกต์ฟรีที่ไม่ได้จ่ายค่า Apple Developer ID ($99 ต่อปี) macOS จึงไม่รู้จักผู้พัฒนาและขึ้นคำเตือน ซึ่งไม่ได้แปลว่าแอปเป็นอันตราย โค้ดทั้งหมดเปิดให้ดูได้ใน repo นี้
+### Why macOS warns you
 
-### ทำไมต้องให้สิทธิ์ Accessibility
+LangFix is a free project without a paid Apple Developer ID ($99 a year), so macOS doesn't recognise the developer and shows a warning. It doesn't mean the app is harmful. All the source code is in this repository.
 
-LangFix ต้องเห็นแป้นที่กดถึงจะรู้ว่าพิมพ์ผิดแป้น และต้องลบแล้วพิมพ์คำที่ถูกแทนให้ได้ macOS อนุญาตให้ทำแบบนี้ผ่านสิทธิ์ Accessibility เท่านั้น
+### Why LangFix needs Accessibility access
 
-LangFix ไม่เก็บและไม่ส่งสิ่งที่พิมพ์ไปที่ไหน การแก้คำทั้งหมดทำงานในเครื่อง อินเทอร์เน็ตใช้แค่ตรวจหาเวอร์ชันใหม่จาก GitHub และจะตรวจอัตโนมัติก็ต่อเมื่อคุณกดอนุญาตตอนที่แอปถาม
+To tell that you typed on the wrong layout, LangFix has to see the keys you press, and to fix it, it has to delete the word and type the right one. macOS only allows that through Accessibility access.
 
-## อัปเดตเป็นเวอร์ชันใหม่
+LangFix doesn't store or send anything you type. All correction happens on your Mac. The only network access is checking GitHub for new versions, and it checks automatically only if you allow it when the app asks.
 
-เลือก "ตรวจหาเวอร์ชันใหม่…" จากเมนู ก/a แล้วกดติดตั้ง ไม่ต้องให้สิทธิ์ Accessibility ใหม่
+## Updating
 
-ถ้าใช้เวอร์ชัน 0.1.8 หรือเก่ากว่า ต้องอัปเดตด้วยมือครั้งเดียว ดาวน์โหลดตัวใหม่จาก[ลิงก์เดิม](https://github.com/l3aipat/langfix/releases/latest/download/LangFix.dmg) แล้วลากไปทับใน Applications จากนั้นเลือก LangFix ในรายการ Accessibility กดปุ่ม − แล้วกด + เพิ่ม LangFix กลับเข้าไป
+Choose "Check for Updates…" from the ก/a menu and click Install. You don't need to grant Accessibility again.
 
-ดูว่าแต่ละเวอร์ชันเปลี่ยนอะไรได้ที่หน้า [Releases](https://github.com/l3aipat/langfix/releases)
+Coming from 0.1.8 or earlier? Update by hand once. Download the new version from the [same link](https://github.com/l3aipat/langfix/releases/latest/download/LangFix.dmg) and drag it over the old one in Applications. Then select LangFix in the Accessibility list, click −, and click + to add LangFix back.
 
-## เจอปัญหา หรืออยากให้มีอะไรเพิ่ม
+See what changed in each version on the [Releases](https://github.com/l3aipat/langfix/releases) page.
 
-LangFix ฟรีและจะฟรีต่อไป สิ่งที่อยากได้คือ feedback ว่าใช้แล้วเป็นยังไง
+## Feedback
 
-แจ้งได้ที่ [Issues](https://github.com/l3aipat/langfix/issues) ถ้าเจอปัญหา ช่วยบอกเวอร์ชัน macOS, แอปที่พิมพ์อยู่ และคำที่พิมพ์แล้วถูกแก้ผิดหรือไม่ถูกแก้
+LangFix is free and will stay free. What helps most is hearing how it works for you.
 
-## สำหรับนักพัฒนา
+Open an [issue](https://github.com/l3aipat/langfix/issues), in English or Thai. For a problem, include your macOS version, the app you were typing in, and the word that was fixed wrongly or not fixed.
+
+## License
+
+LangFix is free software under the [GPL-3.0](LICENSE). You may use, change and share it. If you share a changed version, you must release its source under the GPL-3.0 too.
+
+The app includes [Sparkle](https://sparkle-project.org) (MIT). Its license text is at `LangFix.app/Contents/Resources/Sparkle-LICENSE.txt`.
+
+## Building
 
 ```sh
 swift build                 # build
 ./scripts/test.sh           # unit tests
-./scripts/make-dmg.sh       # สร้าง build/LangFix-<version>.dmg
+./scripts/make-dmg.sh       # build/LangFix-<version>.dmg
+./scripts/release.sh        # stage LangFix.dmg and appcast.xml for a GitHub release
 ```
