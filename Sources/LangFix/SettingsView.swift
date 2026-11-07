@@ -35,10 +35,18 @@ struct SettingsView: View {
                     Button("Add", action: addWord)
                         .disabled(newWord.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+                Toggle("Undo a fix with Delete", isOn: $preferences.undoWithDelete)
                 Stepper(value: $preferences.undosToLearn, in: UndoTally.thresholdRange) {
                     Text("Add a word after undoing it \(preferences.undosToLearn) times")
                 }
-                Text("Pressing Delete right after LangFix changes a word undoes the change. Once you undo the same word this many times, it is added here.")
+                .disabled(!preferences.undoWithDelete)
+                Group {
+                    if preferences.undoWithDelete {
+                        Text("Pressing Delete right after LangFix changes a word undoes the change. Once you undo the same word this many times, it is added here.")
+                    } else {
+                        Text("Delete always deletes one letter. Add words here yourself.")
+                    }
+                }
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ForEach(preferences.ignored.sorted { $0.text < $1.text }, id: \.self) { word in

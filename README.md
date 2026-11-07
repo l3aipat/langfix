@@ -11,7 +11,7 @@ Forgot to switch layouts and typed `l;ylfu`? LangFix turns it into `สวัส
 ## Features
 
 - Fixes a word from its third letter. Short words such as "นะ" are fixed when you press Space.
-- Fixed something you meant? Press Delete right away. Your original text comes back, and LangFix leaves that word alone from then on.
+- Fixed something you meant? Press Delete right away. Your original text comes back, and LangFix leaves that word alone from then on. You can turn this off in Settings.
 - To convert text you already typed, select it and press Option+Shift+Space.
 - Remembers the last layout you used in each app and switches to it when you come back.
 - Shows a small ก or A badge next to the cursor when the layout changes.

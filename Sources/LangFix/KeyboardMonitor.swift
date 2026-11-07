@@ -93,7 +93,7 @@ final class KeyboardMonitor {
             return nil
         }
         if keyCode == Self.deleteKeyCode {
-            guard let undo = corrector.backspace() else { return pass }
+            guard let undo = corrector.backspace(), preferences.undoWithDelete else { return pass }
             apply(undo.correction)
             preferences.recordUndo(of: undo.learned)
             preferences.stats.undone += 1

@@ -20,6 +20,7 @@ final class Preferences: ObservableObject {
         static let rememberLayouts = "rememberLayoutPerApp"
         static let appLayouts = "appLayouts"
         static let showBadge = "showLayoutBadge"
+        static let undoWithDelete = "undoWithDelete"
         static let undosToLearn = "undosToLearn"
         static let undoTally = "undoTally"
     }
@@ -53,6 +54,11 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(showLayoutBadge, forKey: Key.showBadge) }
     }
 
+    /// Delete right after a correction brings the original text back instead of deleting a letter.
+    @Published var undoWithDelete: Bool {
+        didSet { defaults.set(undoWithDelete, forKey: Key.undoWithDelete) }
+    }
+
     /// How many times a word must be undone before LangFix leaves it alone.
     @Published var undosToLearn: Int {
         didSet { defaults.set(undosToLearn, forKey: Key.undosToLearn) }
@@ -73,6 +79,7 @@ final class Preferences: ObservableObject {
             Key.excluded: ["com.apple.Terminal", "com.googlecode.iterm2"],
             Key.rememberLayouts: true,
             Key.showBadge: true,
+            Key.undoWithDelete: true,
             Key.undosToLearn: 2,
         ])
         self.defaults = defaults
@@ -84,6 +91,7 @@ final class Preferences: ObservableObject {
         stats = defaults.data(forKey: Key.stats).flatMap { try? JSONDecoder().decode(Stats.self, from: $0) } ?? Stats()
         rememberLayoutPerApp = defaults.bool(forKey: Key.rememberLayouts)
         showLayoutBadge = defaults.bool(forKey: Key.showBadge)
+        undoWithDelete = defaults.bool(forKey: Key.undoWithDelete)
         undosToLearn = min(max(defaults.integer(forKey: Key.undosToLearn), UndoTally.thresholdRange.lowerBound),
                            UndoTally.thresholdRange.upperBound)
         undoTally = defaults.data(forKey: Key.undoTally).flatMap { try? JSONDecoder().decode(UndoTally.self, from: $0) } ?? UndoTally()
